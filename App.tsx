@@ -19,7 +19,7 @@ type AppMode = 'generator' | 'audit' | 'hub';
 type HubTab = 'audience' | 'hook' | 'community';
 
 const App: React.FC = () => {
-  const [isActivated, setIsActivated] = useState(false);
+  const [isActivated, setIsActivated] = useState<boolean | null>(null);
   const [mode, setMode] = useState<AppMode>('generator');
   const [hubTab, setHubTab] = useState<HubTab>('audience');
   const [isLoading, setIsLoading] = useState(false);
@@ -52,11 +52,15 @@ const App: React.FC = () => {
 
   useEffect(() => {
     const checkActivation = async () => {
-      if (window.aistudio && typeof window.aistudio.hasSelectedApiKey === 'function') {
-        const hasKey = await window.aistudio.hasSelectedApiKey();
-        setIsActivated(hasKey);
+      const aistudio = (window as any).aistudio;
+      if (aistudio && typeof aistudio.hasSelectedApiKey === 'function') {
+        try {
+          const hasKey = await aistudio.hasSelectedApiKey();
+          setIsActivated(hasKey);
+        } catch (e) {
+          setIsActivated(true);
+        }
       } else {
-        // Fallback for environments where the check isn't available
         setIsActivated(true);
       }
     };
@@ -64,9 +68,14 @@ const App: React.FC = () => {
   }, []);
 
   const handleActivate = async () => {
-    if (window.aistudio && typeof window.aistudio.openSelectKey === 'function') {
-      await window.aistudio.openSelectKey();
-      setIsActivated(true); // Proceed immediately per instructions
+    const aistudio = (window as any).aistudio;
+    if (aistudio && typeof aistudio.openSelectKey === 'function') {
+      try {
+        await aistudio.openSelectKey();
+        setIsActivated(true); 
+      } catch (e) {
+        setIsActivated(true);
+      }
     }
   };
 
@@ -123,7 +132,7 @@ const App: React.FC = () => {
     setIsLoading(true); setError(null); setGenResult(null);
     try { const data = await generateViralStrategy(genInputs); setGenResult(data); } catch (err: any) { 
       if (err.message?.includes("entity was not found")) setIsActivated(false);
-      setError('Failed to generate blueprint.'); 
+      setError('Failed to generate blueprint. Ensure your API Key is valid.'); 
     } finally { setIsLoading(false); }
   };
 
@@ -132,7 +141,7 @@ const App: React.FC = () => {
     setHubLoading(prev => ({...prev, ana: true})); setError(null);
     try { const data = await analyzeViralHook(anaInputs); setAnaResult(data); } catch (err: any) { 
       if (err.message?.includes("entity was not found")) setIsActivated(false);
-      setError('Hook Audit failed.'); 
+      setError('Hook Audit failed. Ensure your API Key is valid.'); 
     } finally { setHubLoading(prev => ({...prev, ana: false})); }
   };
 
@@ -141,7 +150,7 @@ const App: React.FC = () => {
     setHubLoading(prev => ({...prev, per: true})); setError(null);
     try { const data = await generateAudiencePersona(perInputs); setPerResult(data); } catch (err: any) { 
       if (err.message?.includes("entity was not found")) setIsActivated(false);
-      setError('Intelligence failed.'); 
+      setError('Intelligence failed. Ensure your API Key is valid.'); 
     } finally { setHubLoading(prev => ({...prev, per: false})); }
   };
 
@@ -150,7 +159,7 @@ const App: React.FC = () => {
     setHubLoading(prev => ({...prev, com: true})); setError(null);
     try { const data = await analyzeComment(comInputs); setComResult(data); } catch (err: any) { 
       if (err.message?.includes("entity was not found")) setIsActivated(false);
-      setError('Comment analysis failed.'); 
+      setError('Comment analysis failed. Ensure your API Key is valid.'); 
     } finally { setHubLoading(prev => ({...prev, com: false})); }
   };
 
@@ -159,30 +168,44 @@ const App: React.FC = () => {
     setIsLoading(true); setError(null); setAudResult(null);
     try { const data = await auditVideoPerformance(audInputs); setAudResult(data); } catch (err: any) { 
       if (err.message?.includes("entity was not found")) setIsActivated(false);
-      setError('Growth Diagnostic failed.'); 
+      setError('Growth Diagnostic failed. Ensure your API Key is valid.'); 
     } finally { setIsLoading(false); }
   };
 
-  if (!isActivated) {
+  // Loading state for activation check
+  if (isActivated === null) {
     return (
-      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6 text-center space-y-8">
-        <div className="w-24 h-24 bg-indigo-600 rounded-[2rem] flex items-center justify-center text-4xl shadow-[0_0_50px_rgba(79,70,229,0.4)] animate-pulse">
-          ⚡
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6 text-center">
+        <div className="w-12 h-12 border-4 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin mb-4"></div>
+        <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Waking Growth Engines...</p>
+      </div>
+    );
+  }
+
+  if (isActivated === false) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-6 text-center space-y-12">
+        <div className="relative">
+          <div className="w-24 h-24 bg-indigo-600 rounded-[2rem] flex items-center justify-center text-4xl shadow-[0_0_50px_rgba(79,70,229,0.4)] animate-pulse relative z-10">
+            ⚡
+          </div>
+          <div className="absolute inset-0 bg-indigo-500 blur-3xl opacity-20 animate-pulse"></div>
         </div>
         <div className="space-y-4 max-w-md">
-          <h1 className="text-4xl font-black text-white italic tracking-tighter uppercase">Activate Engine</h1>
+          <h1 className="text-4xl font-black text-white italic tracking-tighter uppercase leading-none">Command Required</h1>
           <p className="text-slate-400 text-sm font-medium leading-relaxed">
-            ViralVantage requires a linked API key from a paid GCP project to access the Neural Intelligence modules.
+            ViralVantage Neural Intelligence requires a linked API key from a paid Google Cloud project.
           </p>
-          <p className="text-[10px] text-indigo-400 font-black uppercase tracking-widest">
-            <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" rel="noopener noreferrer" className="hover:underline">View Billing Documentation →</a>
+          <p className="text-[10px] text-indigo-400 font-black uppercase tracking-widest pt-2">
+            <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" rel="noopener noreferrer" className="hover:text-indigo-300 underline underline-offset-4">Billing & Setup Guide →</a>
           </p>
         </div>
         <button 
           onClick={handleActivate}
-          className="px-12 py-6 bg-indigo-600 hover:bg-indigo-500 text-white font-black text-xs uppercase tracking-[0.3em] rounded-[1.5rem] shadow-2xl shadow-indigo-600/30 transition-all active:scale-95"
+          className="px-12 py-6 bg-indigo-600 hover:bg-indigo-500 text-white font-black text-xs uppercase tracking-[0.3em] rounded-[1.5rem] shadow-2xl shadow-indigo-600/30 transition-all active:scale-95 group overflow-hidden relative"
         >
-          Initialize Command Center
+          <span className="relative z-10">Initialize Command Center</span>
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
         </button>
       </div>
     );
