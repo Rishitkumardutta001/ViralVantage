@@ -6,9 +6,17 @@ import {
   VideoAuditInputs, VideoAuditResult
 } from "../types";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// Helper to safely get the API key from the environment
+const getApiKey = () => {
+  try {
+    return process.env.API_KEY || "";
+  } catch (e) {
+    return "";
+  }
+};
 
 export const generateViralStrategy = async (inputs: UserInputs): Promise<StrategyResult> => {
+  const ai = new GoogleGenAI({ apiKey: getApiKey() });
   const systemInstruction = `You are a world-class senior social media growth strategist and viral content expert specializing in short-form video.
   Your task is to generate high-performing content optimized for maximum watch time, retention, and conversion.`;
 
@@ -59,6 +67,7 @@ export const generateViralStrategy = async (inputs: UserInputs): Promise<Strateg
 };
 
 export const analyzeViralHook = async (inputs: AnalysisInputs): Promise<AnalysisResult> => {
+  const ai = new GoogleGenAI({ apiKey: getApiKey() });
   const response = await ai.models.generateContent({
     model: 'gemini-3-pro-preview',
     contents: `Audit and optimize this hook: ${JSON.stringify(inputs)}`,
@@ -92,6 +101,7 @@ export const analyzeViralHook = async (inputs: AnalysisInputs): Promise<Analysis
 };
 
 export const generateAudiencePersona = async (inputs: AudienceInputs): Promise<AudienceResult> => {
+  const ai = new GoogleGenAI({ apiKey: getApiKey() });
   const response = await ai.models.generateContent({
     model: 'gemini-3-pro-preview',
     contents: `Generate audience persona: ${JSON.stringify(inputs)}`,
@@ -130,6 +140,7 @@ export const generateAudiencePersona = async (inputs: AudienceInputs): Promise<A
 };
 
 export const analyzeComment = async (inputs: CommentInputs): Promise<CommentResult> => {
+  const ai = new GoogleGenAI({ apiKey: getApiKey() });
   const response = await ai.models.generateContent({
     model: 'gemini-3-pro-preview',
     contents: `Analyze comment: ${JSON.stringify(inputs)}`,
@@ -161,6 +172,7 @@ export const analyzeComment = async (inputs: CommentInputs): Promise<CommentResu
 };
 
 export const auditVideoPerformance = async (inputs: VideoAuditInputs): Promise<VideoAuditResult> => {
+  const ai = new GoogleGenAI({ apiKey: getApiKey() });
   const systemInstruction = `You are an elite multi-platform video growth strategist and AI content quality analyst.
   
   TASK 1: GENERAL PERFORMANCE AUDIT
