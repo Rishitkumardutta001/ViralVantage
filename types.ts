@@ -92,6 +92,26 @@ export interface CommentResult {
   followUp?: string;
 }
 
+export interface AIContentReview {
+  confidence: 'Low' | 'Medium' | 'High';
+  indicators: string[];
+  promptQualityScore: number;
+  creativeControlLevel: string;
+  sceneConsistency: string;
+  platformAlignment: string;
+  strengths: string[];
+  limitations: string[];
+  risks: string[];
+  opportunities: {
+    refinements: string[];
+    diversitySuggestions: string[];
+    pacingImprovements: string[];
+    humanizationStrategies: string[];
+  };
+  optimizedPrompt?: string;
+  promptTips?: string[];
+}
+
 export interface VideoAuditInputs {
   platform: 'YouTube' | 'Instagram' | 'TikTok' | 'LinkedIn' | 'X' | 'Shorts';
   title: string;
@@ -102,9 +122,10 @@ export interface VideoAuditInputs {
   targetAudience: string;
   visuals?: string;
   visualFrames?: string[]; 
-  audioData?: string; // New: Base64 audio part
+  audioData?: string;
   optimizationMode: 'default' | 'spectacle';
   style?: string;
+  isAiGenerated?: boolean;
 }
 
 export interface VideoAuditResult {
@@ -164,4 +185,5 @@ export interface VideoAuditResult {
     visualHookEffectiveness: string;
     aestheticFit: string;
   };
+  aiContentReview?: AIContentReview;
 }

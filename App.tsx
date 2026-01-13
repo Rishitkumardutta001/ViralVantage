@@ -43,7 +43,7 @@ const App: React.FC = () => {
   const [audInputs, setAudInputs] = useState<VideoAuditInputs>({ 
     platform: 'TikTok', title: '', description: '', transcript: '', 
     duration: '', niche: '', targetAudience: '', visuals: '', visualFrames: [], audioData: '',
-    optimizationMode: 'default', style: 'Vlog'
+    optimizationMode: 'default', style: 'Vlog', isAiGenerated: false
   });
   const [audResult, setAudResult] = useState<VideoAuditResult | null>(null);
 
@@ -61,7 +61,7 @@ const App: React.FC = () => {
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
         const frames: string[] = [];
-        const frameCount = 15; // Increased for "High Density" scan
+        const frameCount = 15;
         const intervals = Array.from({ length: frameCount }, (_, i) => (duration / (frameCount + 1)) * (i + 1));
 
         for (let i = 0; i < intervals.length; i++) {
@@ -75,20 +75,8 @@ const App: React.FC = () => {
           setExtractionProgress(Math.round(((i + 1) / frameCount) * 100));
         }
 
-        // Audio Extraction Loop
-        let base64Audio = '';
-        try {
-            const arrayBuffer = await file.arrayBuffer();
-            const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-            const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-            // We convert to a simpler representation if needed, but for now we send a blob
-            // In a real production app, we would transcode to MP3/AAC 16kbps here
-            // Sending small chunk of audio data for reasoning
-            base64Audio = ''; // Placeholder for full audio extraction logic
-        } catch (e) { console.error("Audio rip failed", e); }
-
         URL.revokeObjectURL(video.src);
-        resolve({ frames, audio: base64Audio });
+        resolve({ frames, audio: '' });
       };
       video.onerror = reject;
     });
@@ -100,8 +88,8 @@ const App: React.FC = () => {
     setExtractingFrames(true);
     setExtractionProgress(0);
     try {
-      const { frames, audio } = await extractFrames(file);
-      setAudInputs(prev => ({ ...prev, visualFrames: frames, audioData: audio }));
+      const { frames } = await extractFrames(file);
+      setAudInputs(prev => ({ ...prev, visualFrames: frames }));
     } catch (err) {
       setError("Failed to extract video content.");
     } finally {
@@ -176,7 +164,7 @@ const App: React.FC = () => {
 
       <main className="max-w-7xl mx-auto px-6 py-12">
         <div className="grid lg:grid-cols-12 gap-10">
-          {/* Left Column: Fixed Input Console (Now wider at 5 cols) */}
+          {/* Left Column: Fixed Input Console */}
           <div className="lg:col-span-5 lg:sticky lg:top-32 lg:h-fit space-y-8 transition-all duration-500">
             <div className="space-y-1">
               <h2 className="text-4xl font-black text-white tracking-tighter uppercase italic leading-none">
@@ -206,7 +194,6 @@ const App: React.FC = () => {
                 </form>
               )}
 
-              {/* REFINED AUDIT FORM (EXPANDED WIDTH & DEEP SCAN) */}
               {mode === 'audit' && (
                 <form onSubmit={handleAudSubmit} className="space-y-8 glass p-10 rounded-[3rem] border-white/5 shadow-2xl bg-gradient-to-b from-slate-900/50 to-slate-950">
                   <div className="space-y-6">
@@ -223,6 +210,26 @@ const App: React.FC = () => {
                       </span>
                       <p className="text-[9px] text-slate-600 font-bold mt-2 uppercase tracking-widest">vision + audio engine ready</p>
                       <input type="file" ref={fileInputRef} className="hidden" accept="video/*" onChange={handleFileChange} />
+                    </div>
+
+                    {/* AI GENERATED TOGGLE */}
+                    <div className="bg-slate-950/40 p-5 rounded-3xl border border-white/5 flex items-center justify-between group hover:border-cyan-500/30 transition-all">
+                       <div className="flex items-center gap-3">
+                         <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg border transition-all ${audInputs.isAiGenerated ? 'bg-cyan-500/10 border-cyan-500/40 text-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.2)]' : 'bg-slate-900 border-white/5 text-slate-600'}`}>
+                           {audInputs.isAiGenerated ? '🤖' : '👤'}
+                         </div>
+                         <div>
+                            <span className="text-[10px] font-black text-white uppercase tracking-widest block">AI-Generated / Hybrid</span>
+                            <p className="text-[8px] text-slate-500 font-bold uppercase tracking-widest">Enable deep prompt optimization</p>
+                         </div>
+                       </div>
+                       <button 
+                         type="button"
+                         onClick={() => setAudInputs({...audInputs, isAiGenerated: !audInputs.isAiGenerated})}
+                         className={`w-12 h-6 rounded-full relative transition-all duration-300 ${audInputs.isAiGenerated ? 'bg-cyan-600' : 'bg-slate-800'}`}
+                       >
+                         <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all duration-300 ${audInputs.isAiGenerated ? 'right-1' : 'left-1'}`}></div>
+                       </button>
                     </div>
 
                     <div className="space-y-3">
@@ -242,16 +249,7 @@ const App: React.FC = () => {
 
                     <div className="space-y-4">
                       <input required className="w-full bg-slate-950/50 border border-white/5 rounded-2xl px-6 py-5 text-sm font-medium text-white placeholder-slate-700 outline-none focus:border-indigo-500/50 transition-all" value={audInputs.title} onChange={e => setAudInputs({...audInputs, title: e.target.value})} placeholder="Main Narrative / Concept" />
-                      
-                      <div className="relative group">
-                        <textarea rows={3} className="w-full bg-slate-950/50 border border-white/5 rounded-2xl px-6 py-5 text-sm font-medium text-white placeholder-slate-700 outline-none resize-none focus:border-indigo-500/50 transition-all" value={audInputs.transcript} onChange={e => setAudInputs({...audInputs, transcript: e.target.value})} placeholder="Dialogue / Script (Optional)..." />
-                        {!audInputs.transcript && (audInputs.visualFrames?.length ?? 0) > 0 && (
-                          <div className="absolute bottom-4 right-4 flex items-center gap-1.5 px-3 py-1.5 bg-indigo-500/10 border border-indigo-500/20 rounded-lg backdrop-blur-md animate-fadeIn">
-                             <div className="w-1 h-1 rounded-full bg-indigo-500 animate-ping"></div>
-                             <span className="text-[9px] font-black text-indigo-400 uppercase italic tracking-wider">Multimodal Logic Ready</span>
-                          </div>
-                        )}
-                      </div>
+                      <textarea rows={3} className="w-full bg-slate-950/50 border border-white/5 rounded-2xl px-6 py-5 text-sm font-medium text-white placeholder-slate-700 outline-none resize-none focus:border-indigo-500/50 transition-all" value={audInputs.transcript} onChange={e => setAudInputs({...audInputs, transcript: e.target.value})} placeholder="Dialogue / Script (Optional)..." />
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
@@ -276,7 +274,6 @@ const App: React.FC = () => {
                 </form>
               )}
 
-              {/* INTELLIGENCE HUB CONSOLE */}
               {mode === 'hub' && (
                 <div className="space-y-6 glass p-10 rounded-[3rem] border-white/5 shadow-[0_32px_64px_-16px_rgba(0,0,0,0.5)] bg-gradient-to-b from-slate-900/40 to-slate-950/80">
                   <div className="bg-slate-950/80 p-1.5 rounded-2xl flex gap-1.5 border border-white/10 shadow-inner">
@@ -350,7 +347,7 @@ const App: React.FC = () => {
             {error && <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-2xl text-red-400 text-[10px] text-center font-black uppercase tracking-widest">{error}</div>}
           </div>
 
-          {/* Right Column: Dashboard (7 cols) */}
+          {/* Right Column: Dashboard */}
           <div className="lg:col-span-7 transition-all duration-500">
             {isLoading ? (
               <div className="h-[700px] flex flex-col items-center justify-center space-y-8">

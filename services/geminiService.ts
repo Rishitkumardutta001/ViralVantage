@@ -161,40 +161,31 @@ export const analyzeComment = async (inputs: CommentInputs): Promise<CommentResu
 };
 
 export const auditVideoPerformance = async (inputs: VideoAuditInputs): Promise<VideoAuditResult> => {
-  const systemInstruction = `You are an elite multi-platform video growth strategist.
+  const systemInstruction = `You are an elite multi-platform video growth strategist and AI content quality analyst.
   
-  CONTEXT: The user has selected a specific "Architecture" for their video. 
-  FORMAT STRATEGIES:
-  - Vlog: Audit for personality density, transition speed, and narrative "open loops".
-  - Talking Head: Audit for authority, clarity of message, and visual pattern interrupts.
-  - POV/Skit: Audit for relatability, character speed, and the "AHA" moment timing.
-  - Aesthetic: Audit for visual hook effectiveness, color coherence, and audio-visual sync.
-  - Tutorial: Audit for "Save-ability", complexity vs clarity, and rapid value delivery.
-  - Podcast: Audit for clip selection (climax placement) and caption readability.
-  - Gaming: Audit for high-action "heat maps", commentary synchronization, and gameplay climax timing.
-  - Meme/Trend: Audit for trend-jack timing, subversion of expectation, and audio-template relevance.
-  - Product Showcase: Audit for macro-lighting quality, problem-solution framing, and tactile features.
+  TASK 1: GENERAL PERFORMANCE AUDIT
+  Analyze based on platform architecture (${inputs.style}).
+  
+  TASK 2: AI CONTENT REVIEW (USER-IDENTIFIED: ${inputs.isAiGenerated ? 'YES' : 'NO'})
+  If the user has identified the content as AI-generated, you MUST activate the "aiContentReview" module.
+  Focus on:
+  - Prompt Quality Assessment (0-10)
+  - Scene consistency & Platform-native behavior
+  - AI Strengths (value add) and Risks (generic phrasing/over-polished)
+  - Opportunities for humanization and visual diversity.
+  - Interactive Action: Provide an optimized prompt AND writing tips.
 
-  ANALYSIS: You have high-density frames (15+) and full audio context. Use the audio to analyze pacing, tone, and sound quality.
-  Provide actionable fixes based on the specific architecture: ${inputs.style}.`;
+  AI should be treated as a creative partner. Keep scoring logic for general audit separate.`;
 
   const { visualFrames, audioData, ...textInputs } = inputs;
   const parts: any[] = [
-    { text: `Audit this ${inputs.style} content: ${JSON.stringify(textInputs)}` }
+    { text: `Audit this content: ${JSON.stringify(textInputs)}` }
   ];
 
-  // Add Visual Frames
   if (visualFrames && visualFrames.length > 0) {
     parts.push(...visualFrames.map(data => ({
       inlineData: { data, mimeType: 'image/jpeg' }
     })));
-  }
-
-  // Add Audio Data (100% coverage)
-  if (audioData) {
-    parts.push({
-      inlineData: { data: audioData, mimeType: 'audio/mp3' }
-    });
   }
 
   const response = await ai.models.generateContent({
@@ -234,8 +225,7 @@ export const auditVideoPerformance = async (inputs: VideoAuditInputs): Promise<V
               dropOffTimestamps: { type: Type.ARRAY, items: { type: Type.STRING } },
               disengagementReasons: { type: Type.ARRAY, items: { type: Type.STRING } },
               bingePotential: { type: Type.STRING }
-            },
-            required: ['hookEvaluation', 'dropOffTimestamps', 'disengagementReasons', 'bingePotential']
+            }
           },
           fixMyVideo: {
             type: Type.OBJECT,
@@ -245,16 +235,14 @@ export const auditVideoPerformance = async (inputs: VideoAuditInputs): Promise<V
               titleVariations: { type: Type.ARRAY, items: { type: Type.STRING } },
               ctaOptimization: { type: Type.STRING },
               engagementPrompts: { type: Type.ARRAY, items: { type: Type.STRING } }
-            },
-            required: ['hookRewrite', 'structureChanges', 'titleVariations', 'ctaOptimization', 'engagementPrompts']
+            }
           },
           platformTips: {
             type: Type.OBJECT,
             properties: {
               tactical: { type: Type.ARRAY, items: { type: Type.STRING } },
               mistakesToAvoid: { type: Type.ARRAY, items: { type: Type.STRING } }
-            },
-            required: ['tactical', 'mistakesToAvoid']
+            }
           },
           prePostingPrediction: {
             type: Type.OBJECT,
@@ -262,8 +250,7 @@ export const auditVideoPerformance = async (inputs: VideoAuditInputs): Promise<V
               expectedPerformance: { type: Type.STRING, enum: ['Low', 'Medium', 'High'] },
               confidence: { type: Type.STRING },
               mostImpactfulChange: { type: Type.STRING }
-            },
-            required: ['expectedPerformance', 'confidence', 'mostImpactfulChange']
+            }
           },
           repurposing: {
             type: Type.ARRAY,
@@ -275,34 +262,41 @@ export const auditVideoPerformance = async (inputs: VideoAuditInputs): Promise<V
               }
             }
           },
-          spectacleMode: {
-            type: Type.OBJECT,
-            properties: {
-              ideaClarity: { type: Type.INTEGER },
-              stakesAssessment: { type: Type.STRING },
-              escalationSuggestions: { type: Type.ARRAY, items: { type: Type.STRING } },
-              boldChange: { type: Type.STRING }
-            }
-          },
           growthAssessment: {
             type: Type.OBJECT,
             properties: {
               ceiling: { type: Type.STRING, enum: ['Low', 'Medium', 'High'] },
               nextTierRequirement: { type: Type.STRING },
               limitingFactor: { type: Type.STRING, enum: ['Idea', 'Execution', 'Both'] }
-            },
-            required: ['ceiling', 'nextTierRequirement', 'limitingFactor']
+            }
           },
-          visualAnalysis: {
+          aiContentReview: {
             type: Type.OBJECT,
             properties: {
-              lightingAndQuality: { type: Type.STRING },
-              compositionScore: { type: Type.INTEGER },
-              visualHookEffectiveness: { type: Type.STRING },
-              aestheticFit: { type: Type.STRING }
+              confidence: { type: Type.STRING, enum: ['Low', 'Medium', 'High'] },
+              indicators: { type: Type.ARRAY, items: { type: Type.STRING } },
+              promptQualityScore: { type: Type.INTEGER },
+              creativeControlLevel: { type: Type.STRING },
+              sceneConsistency: { type: Type.STRING },
+              platformAlignment: { type: Type.STRING },
+              strengths: { type: Type.ARRAY, items: { type: Type.STRING } },
+              limitations: { type: Type.ARRAY, items: { type: Type.STRING } },
+              risks: { type: Type.ARRAY, items: { type: Type.STRING } },
+              opportunities: {
+                type: Type.OBJECT,
+                properties: {
+                  refinements: { type: Type.ARRAY, items: { type: Type.STRING } },
+                  diversitySuggestions: { type: Type.ARRAY, items: { type: Type.STRING } },
+                  pacingImprovements: { type: Type.ARRAY, items: { type: Type.STRING } },
+                  humanizationStrategies: { type: Type.ARRAY, items: { type: Type.STRING } }
+                }
+              },
+              optimizedPrompt: { type: Type.STRING },
+              promptTips: { type: Type.ARRAY, items: { type: Type.STRING } }
             }
           }
-        }
+        },
+        required: ['overallPerformance', 'performanceBreakdown', 'fixMyVideo', 'prePostingPrediction']
       }
     }
   });
